@@ -4,6 +4,8 @@ from spindle.spool import Spool
 
 
 class TestSpool(unittest.TestCase):
+
+    
     def setUp(self) -> None:
         Spool._spools = {}
         Spool.reset_attributes()

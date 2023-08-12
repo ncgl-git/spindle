@@ -18,10 +18,10 @@ class Company(Spool):
             yield farm_
 
     def stitch(self, **kwargs):
-        self.sqs_client.send_message(queue="QUEUE FOR PROCESSING" ** kwargs)
+        self.sqs_client.send_message(queue="QUEUE FOR PROCESSING", **kwargs)
 
     def backstitch(self, **kwargs):
-        self.sqs_client.send_message(queue="QUEUE FOR RETRIGGERING" ** kwargs)
+        self.sqs_client.send_message(queue="QUEUE FOR RETRIGGERING", **kwargs)
 
 
 class Farm(Spool):
@@ -38,10 +38,10 @@ class Farm(Spool):
             yield field_
 
     def stitch(self, **kwargs):
-        self.sqs_client.send_message(queue="QUEUE FOR PROCESSING" ** kwargs)
+        self.sqs_client.send_message(queue="QUEUE FOR PROCESSING", **kwargs)
 
     def backstitch(self, **kwargs):
-        self.sqs_client.send_message(queue="QUEUE FOR RETRIGGERING" ** kwargs)
+        self.sqs_client.send_message(queue="QUEUE FOR RETRIGGERING", **kwargs)
 
 
 class Field(Spool):
@@ -51,14 +51,32 @@ class Field(Spool):
         self.__body = body
 
     def unwind(self, **kwargs):
-        """End of the line here, we don't resubmit this."""
-        return
+        for operation in self.session.post(url='operations'):
+            operation_ = Operation(operation)
+            operation_.stitch()
+            # operation_.backstitch() # no further processing to do!
 
     def stitch(self, **kwargs):
-        self.sqs_client.send_message(queue="QUEUE FOR PROCESSING" ** kwargs)
+        self.sqs_client.send_message(queue="QUEUE FOR PROCESSING", **kwargs)
 
     def backstitch(self, **kwargs):
-        self.sqs_client.send_message(queue="QUEUE FOR RETRIGGERING" ** kwargs)
+        self.sqs_client.send_message(queue="QUEUE FOR RETRIGGERING", **kwargs)
+    
+class Operation(Spool):
+
+    def __int__(self, body):
+        self.__body = body
+
+    def unwind(self, **kwargs):
+        return None
+    
+    def stitch(self, **kwargs):
+        self.sqs_client.send_message(queue="QUEUE FOR PROCESSING", **kwargs)
+
+    def backstitch(self, **kwargs):
+        """End of the line here, we don't resubmit this."""
+        return None
+
 
 
 def handler(event, context):
